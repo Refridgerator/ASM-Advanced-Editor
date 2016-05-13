@@ -168,7 +168,7 @@ namespace AsmAE
                         quickInfoContent.Add(str.Substring(pos2 + 2 + reg.Length, -2 - reg.Length + str.Length - pos2).Trim());
                 }
             }
-        }
+        } 
 
         public void Dispose()
         {
