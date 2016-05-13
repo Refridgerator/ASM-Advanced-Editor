@@ -98,18 +98,24 @@ namespace AsmAE
                 bool collapsed_ = false;
 
                 regionStart = -1;
-                int collapsed_comment_start = linetext.IndexOf(";[+]", StringComparison.Ordinal);
-                int comment_start = linetext.IndexOf(";[", StringComparison.Ordinal);
+                int collapsed_outlining_comment_start = linetext.IndexOf(";[+]", StringComparison.Ordinal);
+                int outlining_comment_start = linetext.IndexOf(";[", StringComparison.Ordinal);
+                int comment_start = linetext.IndexOf(";", StringComparison.Ordinal);
                 int proc_start = linetext.IndexOf("proc", StringComparison.OrdinalIgnoreCase);
                 int macro_start = linetext.IndexOf("macro", StringComparison.OrdinalIgnoreCase);
+                if (comment_start > -1)
+                {
+                    if (comment_start < proc_start) proc_start = -1;
+                    if (comment_start < macro_start) macro_start = -1;
+                }
                 if (macro_start > -1)
                 {
                     regionStart = 0;
                     end_text_ = "endm";
-                    if (collapsed_comment_start > -1)
+                    if (collapsed_outlining_comment_start > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(0, collapsed_comment_start).TrimEnd();
+                        ellipsis_ = linetext.Substring(0, collapsed_outlining_comment_start).TrimEnd();
                     }
                     else
                         ellipsis_ = linetext.TrimEnd();
@@ -118,24 +124,24 @@ namespace AsmAE
                 {
                     regionStart = 0;
                     end_text_ = "endp";
-                    if (collapsed_comment_start > -1)
+                    if (collapsed_outlining_comment_start > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(0, collapsed_comment_start).TrimEnd();
+                        ellipsis_ = linetext.Substring(0, collapsed_outlining_comment_start).TrimEnd();
                     }
                     else
                         ellipsis_ = linetext.TrimEnd();
                 }
-                if (comment_start > -1 && collapsed_comment_start < 0)
+                if (outlining_comment_start > -1 && collapsed_outlining_comment_start < 0)
                 {
-                    regionStart = comment_start;
+                    regionStart = outlining_comment_start;
                     if (linetext.IndexOf(";[+") > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(comment_start + 3, -3 + linetext.Length - comment_start).Trim();
+                        ellipsis_ = linetext.Substring(outlining_comment_start + 3, -3 + linetext.Length - outlining_comment_start).Trim();
                     }
                     else
-                        ellipsis_ = linetext.Substring(comment_start + 2, -2 + linetext.Length - comment_start).Trim();
+                        ellipsis_ = linetext.Substring(outlining_comment_start + 2, -2 + linetext.Length - outlining_comment_start).Trim();
                     end_text_ = ";]";
                 }
                 if (ellipsis_ == "") ellipsis_ = "..."; 
