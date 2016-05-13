@@ -151,7 +151,7 @@ namespace AsmAE
                     if (lineend.HasValue)
                         SnapshotPointTag = lineend.Value.End;
                     SnapshotSpan? linecommentspan = _textSearchService.Find(SnapshotPointTag,
-                           @"(?m)^\s*((\w+\s*" + reg + @"\s*,.+;=.+)|(.*;" + reg + @"=.+))(?=\r?$)",
+                           @"(?m)^\s*((\w+\s*" + reg + @"(\s*,.*|\s*);=.+)|(.*;" + reg + @"=.+))(?=\r?$)",
                            FindOptions.SearchReverse | FindOptions.UseRegularExpressions);
 
                     if (!procspan.HasValue || !linecommentspan.HasValue) return;
