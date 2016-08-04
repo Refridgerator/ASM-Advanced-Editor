@@ -15,12 +15,13 @@ namespace AsmAE
 {
     [Export(typeof(EditorFormatDefinition))]
     [Name("MarkerFormatDefinition/AsmHighlightWord")]
+    //[Name("ASMHIGHLIGHT")]
     [UserVisible(true)]
     internal class HighlightWordFormatDefinition : MarkerFormatDefinition
     {
         public HighlightWordFormatDefinition()
         {
-            this.BackgroundColor = Colors.LightBlue;
+            this.BackgroundColor = (Color)ColorConverter.ConvertFromString("#401D4E");
             this.DisplayName = "Asm Highlight Word";
             this.ZOrder = 5;
         }

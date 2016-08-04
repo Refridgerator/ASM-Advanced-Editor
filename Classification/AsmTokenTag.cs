@@ -40,7 +40,7 @@ namespace AsmAE
     {
         ITextBuffer _buffer;
         IDictionary<string, AsmTokens> _asmTypes;
-        Regex rx_number = new Regex(@"^(-?\d+(\.\d+)?|[01]+[bB]|[01234567]+[oO]|[0-9a-fA-F]+[hH])$", RegexOptions.Compiled);
+        Regex rx_number = new Regex(@"^(-?\d+(\.\d+)?|[01]+[bB]|[01234567]+[oO]|[0-9][0-9a-fA-F]+[hH])$", RegexOptions.Compiled);
 
         internal AsmTokenTagger(ITextBuffer buffer)
         {
