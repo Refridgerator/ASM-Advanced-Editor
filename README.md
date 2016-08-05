@@ -1,10 +1,10 @@
 # Assembler Advanced Editor
 Assembler extension for Visual Studio 2012+ with highlighting, outlining and dynamic hints.    
+![sample screenshot](screenshot.png "sample screenshot")
 Applicable to .asm and .inc files.    
 Download compiled extension: [AsmAE.vsix](https://github.com/Refridgerator/ASM-Advanced-Editor/raw/master/bin/Release/AsmAE.vsix)    
 Sample file: [sample.asm](sample.asm)    
-
-![sample screenshot](screenshot.png "sample screenshot")
+For comment/uncomment feature use [this](https://github.com/Refridgerator/-Un-Comment) extension.    
 
 ## Highlighting
 Configure colors from TOOLS->Options...->Fonts and Colors.
