@@ -205,7 +205,7 @@ namespace AsmAE
 				continue;
                 }
             }
-            // remove unclosed regions
+            // remove unclosed regions 
             int j = newRegions.Count - 1;
             while (j >= 0)
             {
