@@ -57,7 +57,6 @@ namespace AsmAE
                     var startLine = currentSnapshot.GetLineFromLineNumber(region.StartLine);
                     var endLine = currentSnapshot.GetLineFromLineNumber(region.EndLine);
 
-                    //the region starts at the beginning of the "[", and goes until the *end* of the line that contains the "]".
                     yield return new TagSpan<IOutliningRegionTag>(
                         new SnapshotSpan(startLine.Start + region.StartOffset, endLine.End),
                         new OutliningRegionTag(region.collapsed, false, region.ellipsis, region.ellipsis));
@@ -67,8 +66,6 @@ namespace AsmAE
 
         void BufferChanged(object sender, TextContentChangedEventArgs e)
         {
-            // If this isn't the most up-to-date version of the buffer, then ignore it for now 
-            // (we'll eventually get another change event). 
             if (e.After != buffer.CurrentSnapshot) return;
             this.ReParse();
         }
@@ -78,8 +75,6 @@ namespace AsmAE
             ITextSnapshot newSnapshot = buffer.CurrentSnapshot;
             List<Region> newRegions = new List<Region>();
 
-            //keep the current (deepest) partial region, which will have 
-            // references to any parent partial regions.
             Region currentRegion = null;
             Region procRegion = null;
             Region macroRegion = null;
@@ -91,7 +86,6 @@ namespace AsmAE
                 string ellipsis_ = "";
                 bool collapsed_ = false;
 
-                 //int collapsed_outlining_macroproc_start = linetext.IndexOf(";[+]", StringComparison.Ordinal);
                 int collapsed_outlining_start = linetext.IndexOf(";[+", StringComparison.Ordinal);
                 int outlining_start = linetext.IndexOf(";[", StringComparison.Ordinal);
                 int outlining_end = linetext.IndexOf(";]", StringComparison.Ordinal);
@@ -121,7 +115,7 @@ namespace AsmAE
                     macroRegion = new Region()
                     {
                         StartLine = line.LineNumber,
-                        StartOffset = 0,//macro_start,
+                        StartOffset = 0,
                         ellipsis = ellipsis_,
                         collapsed = collapsed_,
                         EndLine = -1,
@@ -152,7 +146,7 @@ namespace AsmAE
                     procRegion = new Region()
                     {
                         StartLine = line.LineNumber,
-                        StartOffset = 0,//proc_start,
+                        StartOffset = 0,
                         ellipsis = ellipsis_,
                         collapsed = collapsed_,
                         EndLine = -1,
@@ -170,7 +164,6 @@ namespace AsmAE
                 }
                 #endregion
                 //------------------------------
-
                 if (outlining_start > -1)
                 {
                     if (collapsed_outlining_start > -1)
@@ -183,8 +176,6 @@ namespace AsmAE
 
                     if (ellipsis_ == "") ellipsis_ = "...";
                     //
-
-
                     currentRegion = new Region()
                     {
                         StartLine = line.LineNumber,
@@ -199,28 +190,19 @@ namespace AsmAE
                 //
                 if (outlining_end > -1)
                 {
-                    //if (currentRegion == null)
-                    {
-                        int i = newRegions.Count - 1;
-                        while (i >= 0)
-                        {
-                            Region region = newRegions[i];
-                            if (region.EndLine < 0 && region.breaking) break;
-                            if (region.EndLine < 0)
-                            {
-                                region.EndLine = line.LineNumber;
-                                break;
-                            }
-                            i--;
-                        }
-                    }
-                    //else
-                   // {
-                   //     currentRegion.EndLine = line.LineNumber;
-                   //     currentRegion = null;
-                  //  }
-                    continue;
-
+					int i = newRegions.Count - 1;
+					while (i >= 0)
+					{
+						Region region = newRegions[i];
+						if (region.EndLine < 0 && region.breaking) break;
+						if (region.EndLine < 0)
+						{
+							region.EndLine = line.LineNumber;
+							break;
+						}
+						i--;
+					}
+				continue;
                 }
             }
             // remove unclosed regions
