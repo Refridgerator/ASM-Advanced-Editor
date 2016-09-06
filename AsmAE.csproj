@@ -154,6 +154,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="keywords.ini" />
+    <None Include="instruction_hints_ru.ini" />
     <EmbeddedResource Include="instruction_hints.ini" />
     <None Include="README.md" />
   </ItemGroup>

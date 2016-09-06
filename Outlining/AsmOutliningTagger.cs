@@ -14,21 +14,15 @@ namespace AsmAE
 {
     internal sealed class AsmOutliningTagger : ITagger<IOutliningRegionTag>
     {
-        class PartialRegion
+        class Region
         {
-            public int StartLine { get; set; }
-            public int StartOffset { get; set; }
-            public int Level { get; set; }
-            public PartialRegion PartialParent { get; set; }
-            public string ellipsis = "...";    //the characters that are displayed when the region is collapsed 
-            //public string hover_text = ""; //the contents of the tooltip for the collapsed span  
-            public string end_text = "";
+            public int StartLine = -1;
+            public int StartOffset = -1;
+            public string ellipsis = "...";
+            //public string hover_text = "";
             public bool collapsed = false;
-        }
-
-        class Region : PartialRegion
-        {
-            public int EndLine { get; set; }
+            public int EndLine = -1;
+            public bool breaking = false;
         }
 
         ITextBuffer buffer;
@@ -86,139 +80,157 @@ namespace AsmAE
 
             //keep the current (deepest) partial region, which will have 
             // references to any parent partial regions.
-            PartialRegion currentRegion = null;
+            Region currentRegion = null;
+            Region procRegion = null;
+            Region macroRegion = null;
 
             foreach (var line in newSnapshot.Lines)
             {
-                int regionStart = -1;
                 string linetext = line.GetText();
 
                 string ellipsis_ = "";
-                string end_text_ = "";
                 bool collapsed_ = false;
 
-                regionStart = -1;
-                int collapsed_outlining_comment_start = linetext.IndexOf(";[+]", StringComparison.Ordinal);
-                int outlining_comment_start = linetext.IndexOf(";[", StringComparison.Ordinal);
+                 //int collapsed_outlining_macroproc_start = linetext.IndexOf(";[+]", StringComparison.Ordinal);
+                int collapsed_outlining_start = linetext.IndexOf(";[+", StringComparison.Ordinal);
+                int outlining_start = linetext.IndexOf(";[", StringComparison.Ordinal);
+                int outlining_end = linetext.IndexOf(";]", StringComparison.Ordinal);
                 int comment_start = linetext.IndexOf(";", StringComparison.Ordinal);
                 int proc_start = linetext.IndexOf("proc", StringComparison.OrdinalIgnoreCase);
                 int macro_start = linetext.IndexOf("macro", StringComparison.OrdinalIgnoreCase);
+                int proc_end = linetext.IndexOf("endp", StringComparison.OrdinalIgnoreCase);
+                int macro_end = linetext.IndexOf("endm", StringComparison.OrdinalIgnoreCase);
                 if (comment_start > -1)
                 {
                     if (comment_start < proc_start) proc_start = -1;
                     if (comment_start < macro_start) macro_start = -1;
+                    if (comment_start < proc_end) proc_end = -1;
+                    if (comment_start < macro_end) macro_end = -1;
                 }
+                #region ------- macro ------
                 if (macro_start > -1)
                 {
-                    regionStart = 0;
-                    end_text_ = "endm";
-                    if (collapsed_outlining_comment_start > -1)
+                    if (collapsed_outlining_start > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(0, collapsed_outlining_comment_start).TrimEnd();
+                        ellipsis_ = linetext.Substring(0, collapsed_outlining_start).TrimEnd();
                     }
                     else
                         ellipsis_ = linetext.TrimEnd();
+                    //
+                    macroRegion = new Region()
+                    {
+                        StartLine = line.LineNumber,
+                        StartOffset = 0,//macro_start,
+                        ellipsis = ellipsis_,
+                        collapsed = collapsed_,
+                        EndLine = -1,
+                        breaking = true
+                    };
+                    newRegions.Add(macroRegion);
+                    continue;
                 }
+                if (macro_end > -1)
+                {
+                    if (macroRegion != null)
+                        macroRegion.EndLine = line.LineNumber;
+                    macroRegion = null;
+                    continue;
+                }
+                #endregion
+                #region ------- proc ------
                 if (proc_start > -1)
                 {
-                    regionStart = 0;
-                    end_text_ = "endp";
-                    if (collapsed_outlining_comment_start > -1)
+                    if (collapsed_outlining_start > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(0, collapsed_outlining_comment_start).TrimEnd();
+                        ellipsis_ = linetext.Substring(0, collapsed_outlining_start).TrimEnd();
                     }
                     else
                         ellipsis_ = linetext.TrimEnd();
+                    //
+                    procRegion = new Region()
+                    {
+                        StartLine = line.LineNumber,
+                        StartOffset = 0,//proc_start,
+                        ellipsis = ellipsis_,
+                        collapsed = collapsed_,
+                        EndLine = -1,
+                        breaking = true
+                    };
+                    newRegions.Add(procRegion);
+                    continue;
                 }
-                if (outlining_comment_start > -1 && collapsed_outlining_comment_start < 0)
+                if (proc_end > -1)
                 {
-                    regionStart = outlining_comment_start;
-                    if (linetext.IndexOf(";[+") > -1)
+                    if (procRegion != null)
+                        procRegion.EndLine = line.LineNumber;
+                    procRegion = null;
+                    continue;
+                }
+                #endregion
+                //------------------------------
+
+                if (outlining_start > -1)
+                {
+                    if (collapsed_outlining_start > -1)
                     {
                         collapsed_ = true;
-                        ellipsis_ = linetext.Substring(outlining_comment_start + 3, -3 + linetext.Length - outlining_comment_start).Trim();
+                        ellipsis_ = linetext.Substring(outlining_start + 3, -3 + linetext.Length - outlining_start).Trim();
                     }
                     else
-                        ellipsis_ = linetext.Substring(outlining_comment_start + 2, -2 + linetext.Length - outlining_comment_start).Trim();
-                    end_text_ = ";]";
+                        ellipsis_ = linetext.Substring(outlining_start + 2, -2 + linetext.Length - outlining_start).Trim();
+
+                    if (ellipsis_ == "") ellipsis_ = "...";
+                    //
+
+
+                    currentRegion = new Region()
+                    {
+                        StartLine = line.LineNumber,
+                        StartOffset = outlining_start,
+                        ellipsis = ellipsis_,
+                        collapsed = collapsed_,
+                        EndLine = -1
+                    };
+                    newRegions.Add(currentRegion);
+                    continue;
                 }
-                if (ellipsis_ == "") ellipsis_ = "..."; 
-
-                if (regionStart > -1)
+                //
+                if (outlining_end > -1)
                 {
-                    int currentLevel = (currentRegion != null) ? currentRegion.Level : 1;
-                    int newLevel = currentLevel + 1;
-
-                    //levels are the same and we have an existing region; 
-                    //end the current region and start the next 
-                    if (currentLevel == newLevel && currentRegion != null)
+                    //if (currentRegion == null)
                     {
-                        // ???                     
-                        newRegions.Add(new Region()
+                        int i = newRegions.Count - 1;
+                        while (i >= 0)
                         {
-                            Level = currentRegion.Level,
-                            StartLine = currentRegion.StartLine,
-                            StartOffset = currentRegion.StartOffset,
-                            EndLine = line.LineNumber,
-                            ellipsis = ellipsis_,
-                            end_text = end_text_,
-                            collapsed = collapsed_
-                        });
-                        currentRegion = new PartialRegion()
-                        {
-                            Level = newLevel,
-                            StartLine = line.LineNumber,
-                            StartOffset = regionStart,
-                            PartialParent = currentRegion.PartialParent,
-                            ellipsis = ellipsis_,
-                            end_text = end_text_,
-                            collapsed = collapsed_
-                        };
-                    }
-                    //this is a new (sub)region 
-                    else
-                    {
-                        currentRegion = new PartialRegion()
-                        {
-                            Level = newLevel,
-                            StartLine = line.LineNumber,
-                            StartOffset = regionStart,
-                            PartialParent = currentRegion,
-                            ellipsis = ellipsis_,
-                            end_text = end_text_,
-                            collapsed = collapsed_
-                        };
-                    }
-                }
-                //lines that contain ";]","endm","endp" denote the end of a region
-                else
-                {
-                    int currentLevel = (currentRegion != null) ? currentRegion.Level : 1;
-                    regionStart = (currentRegion == null) ? -1 :
-                        linetext.IndexOf(currentRegion.end_text, StringComparison.OrdinalIgnoreCase);
-
-                    if (regionStart > -1)
-                    {
-                        int closingLevel = currentLevel;
-
-                        //the regions match 
-                        if (currentRegion != null && currentLevel == closingLevel)
-                        {
-                            newRegions.Add(new Region()
+                            Region region = newRegions[i];
+                            if (region.EndLine < 0 && region.breaking) break;
+                            if (region.EndLine < 0)
                             {
-                                Level = currentLevel,
-                                StartLine = currentRegion.StartLine,
-                                StartOffset = currentRegion.StartOffset,
-                                EndLine = line.LineNumber,
-                                ellipsis = currentRegion.ellipsis,
-                                collapsed = currentRegion.collapsed
-                            });
-                            currentRegion = currentRegion.PartialParent;
+                                region.EndLine = line.LineNumber;
+                                break;
+                            }
+                            i--;
                         }
                     }
+                    //else
+                   // {
+                   //     currentRegion.EndLine = line.LineNumber;
+                   //     currentRegion = null;
+                  //  }
+                    continue;
+
                 }
+            }
+            // remove unclosed regions
+            int j = newRegions.Count - 1;
+            while (j >= 0)
+            {
+                Region region = newRegions[j];
+                if (region.EndLine < 0)
+                    newRegions.RemoveAt(j);
+                j--;
             }
 
             //determine the changed span, and send a changed event with the new spans

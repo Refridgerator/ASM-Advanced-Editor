@@ -60,6 +60,7 @@ namespace AsmAE
             // load hints
             hints = new Dictionary<string, string>();
             var assembly = Assembly.GetExecutingAssembly();
+            // TODO: to options
             var resourceName = assembly.GetName().Name + "." + "instruction_hints.ini";
             string last_section = "";
             string line;
@@ -137,19 +138,31 @@ namespace AsmAE
                 // dynamic hints
                 if (curTag.Tag.type == AsmTokens.REGISTER || curTag.Tag.type == AsmTokens.REGISTER_SIMD)
                 {
-                    var tagSpan = curTag.Span.GetSpans(_buffer).First();
+                    var tagSpan = curTag.Span.GetSpans(_buffer).First();// current register
                     
-                    string reg = tagSpan.GetText();
+                    string reg = tagSpan.GetText();// register name
+                    bool is_first_register_in_op = true;
                     SnapshotPoint SnapshotPointTag = new SnapshotPoint(currentSnapshot, tagSpan.Start);
-                    SnapshotSpan? procspan = _textSearchService.Find(SnapshotPointTag,
+                    SnapshotSpan? procspan = _textSearchService.Find(SnapshotPointTag, // start of procedure
                         @"(?m)^\s*\w+\s+(proc|macro)",
                         FindOptions.SearchReverse | FindOptions.UseRegularExpressions);
 
-                    SnapshotSpan? lineend = _textSearchService.Find(new SnapshotPoint(currentSnapshot, tagSpan.Start),
+                    SnapshotSpan? start_line = _textSearchService.Find(new SnapshotPoint(currentSnapshot, tagSpan.Start),
+                        @"\n(.*)",// + reg,
+                          FindOptions.SearchReverse | FindOptions.UseRegularExpressions);
+
+                    int start_pos = 0;
+                    if (start_line.HasValue) start_pos = start_line.Value.Start.Position;
+                   
+                    string linepart = currentSnapshot.GetText(start_pos, tagSpan.Start.Position - start_pos);
+
+                    SnapshotSpan? end_line = _textSearchService.Find(new SnapshotPoint(currentSnapshot, tagSpan.Start),
                          @"(?=\r?$)",
-                         FindOptions.UseRegularExpressions);
-                    if (lineend.HasValue)
-                        SnapshotPointTag = lineend.Value.End;
+                          FindOptions.UseRegularExpressions);
+
+                    if (end_line.HasValue && linepart.IndexOf(reg, StringComparison.OrdinalIgnoreCase) < 1)
+                        SnapshotPointTag = end_line.Value.End;
+                    
                     SnapshotSpan? linecommentspan = _textSearchService.Find(SnapshotPointTag,
                            @"(?m)^\s*((\w+\s*" + reg + @"(\s*,.*|\s*);=.+)|(.*;" + reg + @"=.+))(?=\r?$)",
                            FindOptions.SearchReverse | FindOptions.UseRegularExpressions);
