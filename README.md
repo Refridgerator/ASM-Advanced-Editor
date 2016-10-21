@@ -2,7 +2,6 @@
 Assembler extension for Visual Studio 2012+ with highlighting, outlining and dynamic hints.    
 Applicable to .asm and .inc files.    
 ![sample screenshot](screenshot.png "sample screenshot")    
-Download compiled extension: [AsmAE.vsix](https://github.com/Refridgerator/ASM-Advanced-Editor/raw/master/bin/Release/AsmAE.vsix) , with russian hints: [AsmAE_ru.vsix](https://github.com/Refridgerator/ASM-Advanced-Editor/raw/master/bin/Release/AsmAE_ru.vsix)    
 Sample file: [sample.asm](sample.asm)    
 For comment/uncomment feature use [this](https://github.com/Refridgerator/-Un-Comment) extension.    
 
